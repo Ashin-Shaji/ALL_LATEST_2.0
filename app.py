@@ -194,7 +194,7 @@ else:
 
         for skill in jd_skills:
             if skill.lower() not in highlighted_keywords:
-                highlighted_text = re.sub(rf'\b{re.escape(skill)}\b', f'<span style="background-color: yellow; color: white;">{skill}</span>', highlighted_text, flags=re.IGNORECASE)
+                highlighted_text = re.sub(rf'\b{re.escape(skill)}\b', f'<span style="background-color: yellow; color: black;">{skill}</span>', highlighted_text, flags=re.IGNORECASE)
                 highlighted_keywords.add(skill.lower())
 
         # Extract the float or integer form of experience from 'jd_experience'
