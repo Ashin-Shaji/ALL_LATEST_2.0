@@ -7,7 +7,7 @@ import random
 import google.generativeai as palm
 from langchain.llms import GooglePalm
 from fuzzywuzzy import fuzz
-
+from PIL import Image
 
 # Initialize session state variables
 if 'session_state' not in st.session_state:
@@ -142,6 +142,9 @@ st.set_page_config(
         'About': 'This is a header. This is an extremely cool app!'
     }
 )
+
+image = Image.open("LOGO.jpg")
+st.image(image, use_column_width=50)
 
 st.markdown("<h1 style='text-align: center; color: Blue'>JD & RESUME MATCHING MATRIX </h1>",
             unsafe_allow_html=True)
