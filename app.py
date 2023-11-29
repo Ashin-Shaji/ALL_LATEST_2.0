@@ -3,15 +3,15 @@ import pandas as pd
 import os
 import re
 import ast
+import random
 import google.generativeai as palm
 from langchain.llms import GooglePalm
 from fuzzywuzzy import fuzz
-from PIL import Image
+
 
 # Initialize session state variables
 if 'session_state' not in st.session_state:
     st.session_state['session_state'] = {'jd_skills': [], 'jd_experience': 0}
-
 
 def hybrid_similarity(jd_skills, resume_skills, threshold):
     try:
@@ -54,19 +54,29 @@ def hybrid_similarity(jd_skills, resume_skills, threshold):
         return None, None
 
 
+#def extract_between_chars_regex(input_string, start_char, end_char):
+ #   try:
+  #      pattern = re.compile(f'{re.escape(start_char)}(.*?){re.escape(end_char)}')
+   #     match = pattern.search(input_string)
+
+    #    if match:
+     #       return match.group(1)
+      #  else:
+       #     return None
+    #except Exception as e:
+     #   print(f"An error occurred in the extract_between_chars_regex function: {str(e)}")
+      #  return None
+
 def extract_between_chars_regex(input_string, start_char, end_char):
-    try:
-        pattern = re.compile(f'{re.escape(start_char)}(.*?){re.escape(end_char)}')
-        match = pattern.search(input_string)
+    pattern = re.compile(f'{re.escape(start_char)}(.*?){re.escape(end_char)}', flags=re.DOTALL)
+    match = pattern.search(input_string)
 
-        if match:
-            return match.group(1)
-        else:
-            return None
-    except Exception as e:
-        print(f"An error occurred in the extract_between_chars_regex function: {str(e)}")
+    if match:
+        result = match.group(1)
+        result = result.replace('\n', '')
+        return result
+    else:
         return None
-
 
 def jd_skills_data_prep(text):
     try:
@@ -90,7 +100,7 @@ def get_palm_response(text, prompt):
         os.environ['GOOGLE_API_KEY'] = 'AIzaSyCmdhOVj_KcpTxpWXH94DJOnBuXfZGZffg'
         palm.configure(api_key=os.environ['GOOGLE_API_KEY'])
         llm = GooglePalm()
-        llm.temperature = 0.0
+        llm.temperature = 0.1
         llm_result = llm._generate([text + prompt])
 
         return llm_result.generations[0][0].text
@@ -110,7 +120,7 @@ def get_jd_skills_and_exp(jd_text):
     except:
         skills = jd_skills_data_prep(skills)
 
-    skills = [skill.replace('&', ',') for skill in skills]
+    #skills = [skill.replace('&', ',') for skill in skills]
 
     try:
         experience = float(get_palm_response(prompt2, jd_text))
@@ -132,9 +142,6 @@ st.set_page_config(
         'About': 'This is a header. This is an extremely cool app!'
     }
 )
-
-image = Image.open("LOGO.jpg")
-st.image(image, use_column_width=50)
 
 st.markdown("<h1 style='text-align: center; color: Blue'>JD & RESUME MATCHING MATRIX </h1>",
             unsafe_allow_html=True)
@@ -178,30 +185,8 @@ else:
         st.session_state['session_state']['jd_experience'] = jd_experience
         st.session_state['session_state']['jd_full_text'] = jd_full_text
 
-        # Highlight common keywords in 'jd_full_text'
-        highlighted_text = jd_full_text
-        highlighted_keywords = set()
-
-        for skill in jd_skills:
-            if skill.lower() not in highlighted_keywords:
-                highlighted_text = re.sub(rf'\b{re.escape(skill)}\b', f'<span style="background-color: green;">{skill}</span>', highlighted_text, flags=re.IGNORECASE)
-                highlighted_keywords.add(skill.lower())
-
-        # Extract the float or integer form of experience from 'jd_experience'
-        experience = float(jd_experience)
-        experience_int = int(experience)
-
-        # Highlight the float or integer form of 'experience' in 'jd_full_text'
-        highlighted_text = re.sub(rf'\b{re.escape(str(experience))}\b', f'<span style="background-color: blue;">{experience}</span>', highlighted_text, flags=re.IGNORECASE)
-        highlighted_text = re.sub(rf'\b{re.escape(str(experience_int))}\b', f'<span style="background-color: blue;">{experience_int}</span>', highlighted_text, flags=re.IGNORECASE)
-
-        st.markdown(f"SKILLS REQUIRED: {', '.join(jd_skills)}")
-        st.markdown(f"EXPERIENCE REQUIRED: {jd_experience}")
-        st.markdown(f"FULL TEXT: {highlighted_text}", unsafe_allow_html=True)
-
-        
-        #st.write(f"SKILLS REQUIRED: {jd_skills}")
-        #st.write(f"EXPERIENCE REQUIRED: {jd_experience}")
+        st.write(f"SKILLS REQUIRED: {jd_skills}")
+        st.write(f"EXPERIENCE REQUIRED: {jd_experience}")
         #st.write(f"FULL TEXT: {jd_full_text}")
 
     resume_data = pd.read_csv("Resume_Parsed_Sample_v4_with_exp_refurb.csv")
@@ -231,7 +216,7 @@ else:
             jd_skill_similarity, matched_skills = hybrid_similarity(jd_skills, eval(res_row[3]), threshold)
             Missing_Skills = list(set(jd_skills) - set(eval(res_row[3])))
             additional_skills = list(set(eval(res_row[3])) - set(jd_skills))
-            matched_skills = list(set(jd_skills) - set(Missing_Skills))
+            #matched_skills = list(set(jd_skills) - set(Missing_Skills)) #change 1
 
             final_list.append(
                 [jd_skills, jd_experience, res_row[0], res_row[3], additional_skills, res_row[5],
@@ -251,19 +236,22 @@ else:
 
         final_data['Experience_Tag'] = final_data[['JD_Experience', 'Experience']].apply(
             lambda x: 1 if x['Experience'] >= x['JD_Experience'] else 0, axis=1)
+        
+        # final_data['Matching_Score'] = final_data[['Skill_Similarity', 'Experience_Tag']].apply(lambda x: (x['Skill_Similarity']+x['Experience_Tag'])/2, axis=1)
+       
+        # final_data['Matching_Score'] = final_data[['Skill_Similarity', 'Experience_Tag']].apply(
+        #     lambda x: (2 * x['Skill_Similarity'] + x['Experience_Tag']) / (2 + 1) if x['Skill_Similarity'] > 0 else 0,axis=1)
 
         final_data['Matching_Score'] = final_data[['Skill_Similarity', 'Experience_Tag']].apply(
-            lambda x: (2 * x['Skill_Similarity'] + x['Experience_Tag']) / (2 + 1) if x['Skill_Similarity'] > 0 else 0,axis=1)
+            lambda x: min((2 * x['Skill_Similarity'] + x['Experience_Tag']) / 3, 1) if x['Skill_Similarity'] > 0 else 0, axis=1)
 
+        
         final_data['Additional_skills'] = final_data['Additional_skills'].apply(
             lambda x: 'No additional skills' if not x else x)
 
-        # final_data = final_data.sort_values(['Matching_Score'], ascending=[False]).reset_index(drop=True)
-        # final_data['Matching_Score'] = final_data['Matching_Score'].apply(
-        #     lambda x: str(int(x * 100)) + '%')
-        final_data = final_data[final_data['Matching_Score'] > 0].sort_values(['Matching_Score'], ascending=[False]).reset_index(drop=True)
-        final_data['Matching_Score'] = final_data['Matching_Score'].apply(lambda x: str(int(x * 100)) + '%')
-        
+        final_data = final_data.sort_values(['Matching_Score'], ascending=[False]).reset_index(drop=True)
+        final_data['Matching_Score'] = final_data['Matching_Score'].apply(
+            lambda x: str(int(x * 100)) + '%')
         final_data['Experience'] = final_data['Experience'].apply(lambda x: round(x, 2))
 
         final_data = final_data[(final_data['Experience'] >= final_data['JD_Experience']) |
