@@ -143,7 +143,7 @@ st.set_page_config(
     }
 )
 
-image = Image.open("LOGO.jpg")
+image = Image.open("logo.png")
 st.image(image, use_column_width=50)
 
 st.markdown("<h1 style='text-align: center; color: Blue'>JD & RESUME MATCHING MATRIX </h1>",
