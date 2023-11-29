@@ -67,15 +67,30 @@ def hybrid_similarity(jd_skills, resume_skills, threshold):
      #   print(f"An error occurred in the extract_between_chars_regex function: {str(e)}")
       #  return None
 
-def extract_between_chars_regex(input_string, start_char, end_char):
-    pattern = re.compile(f'{re.escape(start_char)}(.*?){re.escape(end_char)}', flags=re.DOTALL)
-    match = pattern.search(input_string)
+# def extract_between_chars_regex(input_string, start_char, end_char):
+#     pattern = re.compile(f'{re.escape(start_char)}(.*?){re.escape(end_char)}', flags=re.DOTALL)
+#     match = pattern.search(input_string)
 
-    if match:
-        result = match.group(1)
-        result = result.replace('\n', '')
-        return result
-    else:
+#     if match:
+#         result = match.group(1)
+#         result = result.replace('\n', '')
+#         return result
+#     else:
+#         return None
+
+def extract_between_chars_regex(input_string, start_char, end_char):
+    try:
+        pattern = re.compile(f'{re.escape(start_char)}(.*?){re.escape(end_char)}', flags=re.DOTALL)
+        match = pattern.search(input_string)
+
+        if match:
+            result = match.group(1)
+            result = result.replace('\n', '')
+            return result
+        else:
+            return None
+    except Exception as e:
+        print(f"An error occurred: {e}")
         return None
 
 def jd_skills_data_prep(text):
